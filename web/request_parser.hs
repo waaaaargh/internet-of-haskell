@@ -15,13 +15,15 @@ instance Show Header where
 data Request = Request { method :: Method
                        , resource :: String
                        , protocolVersion :: ProtocolVersion
-                       , headers :: [Header] }
+                       , headers :: [Header]
+                       , body :: String }
 
 instance Show Request where
-    show (Request m r p h) = "REQUEST\n  Method: " ++ show m ++
-                             "\n  Resource: " ++ show r ++
-                             "\n  ProtocolVersion:" ++ show p ++
-                             "\n  Headers: " ++ show h
+    show (Request m r p h b) = "REQUEST\n  Method: " ++ show m ++
+                               "\n  Resource: " ++ show r ++
+                               "\n  ProtocolVersion:" ++ show p ++
+                               "\n  Headers: " ++ show h ++
+                               "\n  Body: " ++ show (length b) ++ " bytes"
 
 -- simplistic HTTP RequestParser
 requestLineParser :: Parser (Method, String, ProtocolVersion)
@@ -64,7 +66,10 @@ requestParser = do
   (method, resource, protocolVersion) <- requestLineParser
   headers <- many $ headerLineParser
   endOfLine
-  return $ Request method resource protocolVersion headers
+  body <- many $ notChar '\n'
+  return $ Request method resource protocolVersion headers body
 
 main :: IO ()
-main = print $ parseOnly requestParser "GET /images/hello.png HTTP/1.1\nfoo: bar\nbaz: bat\n\n"
+main = do
+  print $ parseOnly requestParser "GET /images/hello.png HTTP/1.1\nfoo: bar\nbaz: bat\n\nfoobar\n\n"
+  print $ parseOnly requestParser "GET /images/hello.png HTTP/1.1\nfoo: bar\n\n"
